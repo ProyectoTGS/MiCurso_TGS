@@ -1,7 +1,7 @@
 'use client';
 
 import { BookOpen, Eye, EyeOff, LoaderCircle, Moon, Sun } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Course } from '@/lib/mi-curso';
 
@@ -27,7 +27,20 @@ export function AuthScreen({
   const [courseId, setCourseId] = useState(courses[0]?.id ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState(message ?? '');
+  const [feedback, setFeedback] = useState('');
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return;
+    const controller = new AbortController();
+    void fetch(`${url}/auth/v1/settings`, { headers: { apikey: key }, signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((settings) => setGoogleEnabled((settings as { external?: { google?: boolean } } | null)?.external?.google === true))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,8 +106,7 @@ export function AuthScreen({
           <button role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => changeMode('login')}>Ingresar</button>
           <button role="tab" aria-selected={mode === 'register'} className={mode === 'register' ? 'active' : ''} onClick={() => changeMode('register')}>Registrarme</button>
         </div>
-        <button type="button" className="google-button" disabled={busy} onClick={signInWithGoogle}><span aria-hidden="true">G</span> Continuar con Google</button>
-        <div className="auth-divider">o con email</div>
+        {googleEnabled ? <><button type="button" className="google-button" disabled={busy} onClick={signInWithGoogle}><span aria-hidden="true">G</span> Continuar con Google</button><div className="auth-divider">o con email</div></> : null}
         <form onSubmit={submit}>
           {mode === 'register' ? <>
             <label>Nombre de usuario<input value={username} onChange={(event) => setUsername(event.target.value)} maxLength={40} autoComplete="nickname" required /></label>
@@ -102,7 +114,7 @@ export function AuthScreen({
           </> : null}
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
           <label>Contraseña<span className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required /><button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span></label>
-          {feedback ? <p className="form-feedback" role="status">{feedback}</p> : null}
+          {feedback || message ? <p className="form-feedback" role="status">{feedback || message}</p> : null}
           <button className="primary-button" disabled={busy || (mode === 'register' && !courses.length)}>{busy ? <LoaderCircle className="spin" size={18} /> : null}{mode === 'login' ? 'Ingresar' : 'Crear cuenta'}</button>
         </form>
       </section>
