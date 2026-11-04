@@ -169,5 +169,5 @@ export function MiCursoRuntime() {
     return <AuthScreen supabase={supabase} dark={dark} onToggleDark={toggleDark} message={authMessage} />;
   }
 
-  return <StudentApp supabase={supabase} profile={profile} course={course} inviteCode={inviteCode} dark={dark} onToggleDark={toggleDark} onSignOut={() => void supabase.auth.signOut()} />;
+  return <StudentApp supabase={supabase} profile={profile} course={course} inviteCode={inviteCode} dark={dark} onToggleDark={toggleDark} onClassChanged={() => void loadIdentity(profile.id)} onSignOut={() => void supabase.auth.signOut()} />;
 }

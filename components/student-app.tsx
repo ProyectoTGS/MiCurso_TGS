@@ -186,13 +186,14 @@ function CalendarView({ publications, profiles, onOpen }: { publications: Public
   );
 }
 
-export function StudentApp({ supabase, profile, course, inviteCode, dark, onToggleDark, onSignOut }: {
+export function StudentApp({ supabase, profile, course, inviteCode, dark, onToggleDark, onClassChanged, onSignOut }: {
   supabase: SupabaseClient;
   profile: Profile;
   course: Course;
   inviteCode: string | null;
   dark: boolean;
   onToggleDark: () => void;
+  onClassChanged: () => void;
   onSignOut: () => void;
 }) {
   const [view, setView] = useState<View>('board');
@@ -202,6 +203,9 @@ export function StudentApp({ supabase, profile, course, inviteCode, dark, onTogg
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [joiningClass, setJoiningClass] = useState(false);
+  const [classCode, setClassCode] = useState('');
+  const [classError, setClassError] = useState('');
   const [selected, setSelected] = useState<Publication | null>(null);
   const [editing, setEditing] = useState<Publication | null | 'new'>(null);
   const [historySubject, setHistorySubject] = useState<'Todas' | Subject>('Todas');
@@ -245,6 +249,21 @@ export function StudentApp({ supabase, profile, course, inviteCode, dark, onTogg
   function notify(message: string) {
     setToast(message);
     window.setTimeout(() => setToast(''), 2400);
+  }
+
+  async function joinClass(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setClassError('');
+    const { error } = await supabase.rpc('unirse_clase', { codigo_clase: classCode.trim() });
+    if (error) setClassError(error.message);
+    else {
+      setJoiningClass(false);
+      setClassCode('');
+      onClassChanged();
+    }
+    setBusy(false);
   }
 
   async function savePublication(draft: Draft) {
@@ -294,7 +313,7 @@ export function StudentApp({ supabase, profile, course, inviteCode, dark, onTogg
         <header className="app-header">
           <div><h1>{course.nombre}</h1>{inviteCode ? <small>Código de clase: <strong>{inviteCode}</strong></small> : null}</div>
           <div className="header-buttons"><button className="theme-button" onClick={onToggleDark} aria-label={dark ? 'Usar modo claro' : 'Usar modo oscuro'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button><button className="user-button" onClick={() => setMenuOpen((current) => !current)} aria-label="Abrir menú de usuario">{initials(profile.username)}</button></div>
-          {menuOpen ? <div className="user-menu"><strong>{profile.username}</strong><span>{course.nombre}</span>{profile.role === 'admin' ? <Link href="/admin"><Settings size={16} />Panel de control</Link> : null}<button onClick={onSignOut}><LogOut size={16} />Cerrar sesión</button></div> : null}
+          {menuOpen ? <div className="user-menu"><strong>{profile.username}</strong><span>{course.nombre}</span>{profile.role === 'admin' ? <Link href="/admin"><Settings size={16} />Panel de control</Link> : null}{!profile.es_profesor && profile.role !== 'admin' ? <button onClick={() => { setMenuOpen(false); setClassError(''); setJoiningClass(true); }}>Cambiar de clase</button> : null}<button onClick={onSignOut}><LogOut size={16} />Cerrar sesión</button></div> : null}
         </header>
 
         <div className="content">
@@ -308,6 +327,7 @@ export function StudentApp({ supabase, profile, course, inviteCode, dark, onTogg
       <button className="floating-add" onClick={() => setEditing('new')} aria-label="Publicar"><Plus size={27} /></button>
       <nav className="bottom-nav" aria-label="Navegación principal"><button className={view === 'board' ? 'active' : ''} onClick={() => setView('board')}><Home size={21} /><span>Tablón</span></button><button className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}><CalendarDays size={21} /><span>Calendario</span></button><span /><button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}><History size={21} /><span>Historial</span></button></nav>
 
+      {joiningClass ? <div className="modal-layer" role="dialog" aria-modal="true" aria-labelledby="join-class-title"><button className="modal-scrim" onClick={() => setJoiningClass(false)} aria-label="Cerrar" /><section className="modal-card form-modal"><header><h2 id="join-class-title">Cambiar de clase</h2><button onClick={() => setJoiningClass(false)} aria-label="Cerrar"><X size={20} /></button></header><p>Ingresá el código que te dio tu profesor. Dejarás de ver el tablón de tu clase actual.</p><form onSubmit={joinClass}><label>Código de clase<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={12} required /></label>{classError ? <p className="form-feedback" role="status">{classError}</p> : null}<button className="primary-button" disabled={busy}>{busy ? 'Ingresando…' : 'Entrar a la clase'}</button></form></section></div> : null}
       {editing ? <PublicationForm initial={editing === 'new' ? undefined : editing} busy={busy} onClose={() => setEditing(null)} onSave={savePublication} /> : null}
       {selected ? <PublicationDetail publication={selected} history={history} publications={publicationMap} profiles={profileMap} isAdmin={profile.role === 'admin'} busy={busy} onClose={() => setSelected(null)} onEdit={() => { setEditing(selected); setSelected(null); }} onDelete={deletePublication} /> : null}
       {toast ? <div className="toast" role="status">{toast}</div> : null}

@@ -1,8 +1,8 @@
 # Configuración de Supabase
 
 1. Ejecutá `schema.sql` en el editor SQL del proyecto.
-2. Opcionalmente, ejecutá `seed.sql` para crear cursos de ejemplo. Los cursos
-   que crea un profesor desde la app generan un código para invitar alumnos.
+2. Las clases se crean desde la cuenta del profesor; no hace falta cargar
+   cursos de ejemplo. Cada clase genera un código para invitar alumnos.
 3. Configurá en el hosting:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key)

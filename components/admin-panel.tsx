@@ -12,7 +12,6 @@ import {
   LogOut,
   Moon,
   Pencil,
-  Plus,
   RotateCcw,
   Search,
   ShieldCheck,
@@ -45,7 +44,7 @@ const SECTION_TITLES: Record<AdminSection, string> = {
   overview: 'Resumen',
   users: 'Usuarios',
   posts: 'Tablón',
-  courses: 'Cursos',
+  courses: 'Clases',
   history: 'Historial',
 };
 
@@ -74,7 +73,7 @@ function AdminPostEditor({
         </header>
         <form onSubmit={(event) => { event.preventDefault(); onSave(draft); }}>
           <label>
-            Curso
+            Clase
             <select value={draft.curso_id} onChange={(event) => setDraft({ ...draft, curso_id: event.target.value })}>
               {courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}
             </select>
@@ -117,7 +116,6 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
   const [courseFilter, setCourseFilter] = useState('Todos');
   const [subjectFilter, setSubjectFilter] = useState<'Todas' | Subject>('Todas');
   const [userFilter, setUserFilter] = useState('Todos');
-  const [newCourse, setNewCourse] = useState('');
   const [editingPost, setEditingPost] = useState<Publication | null>(null);
   const [toast, setToast] = useState('');
 
@@ -144,6 +142,11 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
   }, [loadAll]);
 
   const courseMap = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
+  // Las clases de ejemplo sin usuarios ni publicaciones no forman parte de la aplicación.
+  const visibleCourses = useMemo(() => {
+    const used = new Set([...profiles.map((profile) => profile.curso_id), ...publications.map((post) => post.curso_id)]);
+    return courses.filter((course) => used.has(course.id));
+  }, [courses, profiles, publications]);
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
   const publicationMap = useMemo(() => new Map(publications.map((publication) => [publication.id, publication])), [publications]);
   const filteredProfiles = profiles.filter((profile) => profile.username.toLowerCase().includes(search.toLowerCase()));
@@ -218,20 +221,6 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
     setBusy(false);
   }
 
-  async function createCourse(event: React.FormEvent) {
-    event.preventDefault();
-    if (!newCourse.trim()) return;
-    setBusy(true);
-    const { error } = await supabase.from('cursos').insert({ nombre: newCourse.trim() });
-    if (error) notify(error.message);
-    else {
-      setNewCourse('');
-      notify('Curso creado.');
-    }
-    await loadAll();
-    setBusy(false);
-  }
-
   async function saveCourse(course: Course) {
     setBusy(true);
     const { error } = await supabase.from('cursos').update({ nombre: course.nombre.trim() }).eq('id', course.id);
@@ -269,7 +258,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
     { id: 'posts' as const, label: 'Tablón', icon: Home },
     { id: 'overview' as const, label: 'Resumen', icon: LayoutDashboard },
     { id: 'users' as const, label: 'Usuarios', icon: Users },
-    { id: 'courses' as const, label: 'Cursos', icon: GraduationCap },
+    { id: 'courses' as const, label: 'Clases', icon: GraduationCap },
     { id: 'history' as const, label: 'Historial', icon: History },
   ];
 
@@ -301,13 +290,13 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
         {!loading && section === 'overview' ? (
           <div className="admin-overview">
             <section className="admin-hero">
-              <div><span>Acceso maestro</span><h2>Todo el curso, en un solo lugar.</h2><p>Administrá cuentas, contenido y cursos desde este panel independiente.</p></div>
+              <div><span>Acceso maestro</span><h2>Las clases, en un solo lugar.</h2><p>Administrá cuentas y contenido desde este panel.</p></div>
               <ShieldCheck size={76} aria-hidden="true" />
             </section>
             <div className="admin-stats">
               <button onClick={() => setSection('users')}><span><UserCheck size={18} /></span><strong>{activeProfiles}</strong><small>usuarios activos</small></button>
               <button onClick={() => setSection('users')}><span><UserX size={18} /></span><strong>{inactiveProfiles}</strong><small>usuarios desactivados</small></button>
-              <button onClick={() => setSection('courses')}><span><GraduationCap size={18} /></span><strong>{courses.length}</strong><small>cursos</small></button>
+              <button onClick={() => setSection('courses')}><span><GraduationCap size={18} /></span><strong>{visibleCourses.length}</strong><small>clases</small></button>
               <button onClick={() => setSection('posts')}><span><BookOpen size={18} /></span><strong>{activePublications}</strong><small>publicaciones activas</small></button>
               <button onClick={() => setSection('posts')}><span><CalendarDays size={18} /></span><strong>{nextSevenDays}</strong><small>fechas esta semana</small></button>
             </div>
@@ -324,9 +313,9 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
               </section>
               <section className="admin-overview-card admin-quick-actions">
                 <header><div><span>Accesos</span><h3>Gestión rápida</h3></div></header>
-                <button onClick={() => setSection('users')}><Users size={18} /><span><strong>Administrar usuarios</strong><small>Cambiar curso o estado</small></span></button>
+                <button onClick={() => setSection('users')}><Users size={18} /><span><strong>Administrar usuarios</strong><small>Cambiar clase o estado</small></span></button>
                 <button onClick={() => setSection('posts')}><BookOpen size={18} /><span><strong>Revisar publicaciones</strong><small>Editar, borrar o restaurar</small></span></button>
-                <button onClick={() => setSection('courses')}><GraduationCap size={18} /><span><strong>Organizar cursos</strong><small>Crear y cambiar nombres</small></span></button>
+                <button onClick={() => setSection('courses')}><GraduationCap size={18} /><span><strong>Ver clases</strong><small>Consultar y cambiar nombres</small></span></button>
               </section>
             </div>
           </div>
@@ -340,8 +329,8 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
                 <div className="admin-user-row" key={profile.id}>
                   <span className="admin-user-avatar">{initials(profile.username)}</span>
                   <input aria-label="Nombre de usuario" value={profile.username} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, username: event.target.value } : item))} />
-                  <select aria-label="Curso" value={profile.curso_id ?? ''} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, curso_id: event.target.value || null } : item))}><option value="">Sin clase</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select>
-                  <label className="active-check"><input type="checkbox" checked={profile.activo} disabled={profile.id === admin.id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, activo: event.target.checked } : item))} />{profile.activo ? 'Acceso habilitado' : 'Aprobar acceso'}</label>
+                  <select aria-label="Clase" value={profile.curso_id ?? ''} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, curso_id: event.target.value || null } : item))}><option value="">Sin clase</option>{visibleCourses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select>
+                  <label className="active-check"><input type="checkbox" checked={profile.activo} disabled={profile.id === admin.id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, activo: event.target.checked } : item))} />{profile.activo ? 'Acceso habilitado' : 'Cuenta desactivada'}</label>
                   <button className="secondary-button" disabled={busy} onClick={() => saveUser(profile)}>Guardar</button>
                   {profile.role !== 'admin' ? <button className="danger-button" disabled={busy} onClick={() => deleteUser(profile)} aria-label={`Eliminar cuenta de ${profile.username}`}><Trash2 size={17} /> Eliminar</button> : null}
                 </div>
@@ -352,7 +341,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
 
         {!loading && section === 'posts' ? (
           <>
-            <div className="admin-filters"><label>Curso<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option>Todos</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label><label>Materia<select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value as 'Todas' | Subject)}><option>Todas</option>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label></div>
+            <div className="admin-filters"><label>Clase<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option>Todos</option>{visibleCourses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label><label>Materia<select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value as 'Todas' | Subject)}><option>Todas</option>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label></div>
             <div className="admin-list admin-board-list">
               {filteredPublications.map((publication) => <article className={`admin-post-row ${publication.borrada ? 'deleted' : ''}`} key={publication.id}><div><strong>{publication.titulo}</strong><span>{courseMap.get(publication.curso_id)?.nombre} · {publication.materia} · {publication.tipo === 'tp' ? 'TP' : 'Prueba'}{publication.borrada ? ' · Borrada' : ''}</span></div><button onClick={() => setEditingPost(publication)} aria-label="Editar"><Pencil size={17} /></button>{publication.borrada ? <><button onClick={() => setDeleted(publication, false)} aria-label="Restaurar"><RotateCcw size={17} /></button><button className="delete-icon" disabled={busy} onClick={() => deletePostPermanently(publication)} aria-label="Eliminar definitivamente"><Trash2 size={17} /></button></> : <button className="delete-icon" onClick={() => setDeleted(publication, true)} aria-label="Borrar"><Trash2 size={17} /></button>}</article>)}
               {!filteredPublications.length ? <p className="admin-empty">No hay publicaciones con estos filtros.</p> : null}
@@ -362,20 +351,20 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
 
         {!loading && section === 'courses' ? (
           <>
-            <form className="new-course-form" onSubmit={createCourse}><input value={newCourse} onChange={(event) => setNewCourse(event.target.value)} placeholder="Ej: 6° A" /><button className="primary-button" disabled={busy}><Plus size={17} />Crear curso</button></form>
-            <div className="admin-list admin-course-list">{courses.map((course) => <div className="admin-course-row" key={course.id}><span><GraduationCap size={18} /></span><input value={course.nombre} onChange={(event) => setCourses((current) => current.map((item) => item.id === course.id ? { ...item, nombre: event.target.value } : item))} /><small>{profiles.filter((profile) => profile.curso_id === course.id).length} alumnos</small><button className="secondary-button" disabled={busy} onClick={() => saveCourse(course)}>Guardar</button></div>)}</div>
+            <p>Los profesores crean sus clases y comparten el código con sus alumnos.</p>
+            <div className="admin-list admin-course-list">{visibleCourses.map((course) => <div className="admin-course-row" key={course.id}><span><GraduationCap size={18} /></span><input value={course.nombre} onChange={(event) => setCourses((current) => current.map((item) => item.id === course.id ? { ...item, nombre: event.target.value } : item))} /><small>{profiles.filter((profile) => profile.curso_id === course.id && !profile.es_profesor && profile.role !== 'admin').length} alumnos</small><button className="secondary-button" disabled={busy} onClick={() => saveCourse(course)}>Guardar</button></div>)}{!visibleCourses.length ? <p className="admin-empty">Todavía no hay clases.</p> : null}</div>
           </>
         ) : null}
 
         {!loading && section === 'history' ? (
           <>
-            <div className="admin-filters"><label>Curso<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option>Todos</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label><label>Usuario<select value={userFilter} onChange={(event) => setUserFilter(event.target.value)}><option>Todos</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.username}</option>)}</select></label><label>Materia<select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value as 'Todas' | Subject)}><option>Todas</option>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label></div>
+            <div className="admin-filters"><label>Clase<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option>Todos</option>{visibleCourses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label><label>Usuario<select value={userFilter} onChange={(event) => setUserFilter(event.target.value)}><option>Todos</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.username}</option>)}</select></label><label>Materia<select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value as 'Todas' | Subject)}><option>Todas</option>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label></div>
             <div className="admin-history">{filteredHistory.map((entry) => { const publication = publicationMap.get(entry.publicacion_id); return <article key={entry.id}><div><strong>{profileMap.get(entry.user_id ?? '')?.username ?? 'Usuario eliminado'} · {entry.accion}</strong><time>{relativeTime(entry.created_at)}</time></div><p>{courseMap.get(entry.curso_id)?.nombre} · {publication?.materia} · {publication?.titulo}</p>{entry.accion === 'editó' ? <ul>{Object.entries(entry.cambios).filter(([field, value]) => field !== 'publicacion' && value && typeof value === 'object' && 'anterior' in value && 'nuevo' in value).map(([field, value]) => { const change = value as { anterior: unknown; nuevo: unknown }; return <li key={field}>{FIELD_LABELS[field] ?? field}: {formatChangeValue(field, change.anterior)} → {formatChangeValue(field, change.nuevo)}</li>; })}</ul> : null}<button className="danger-button" disabled={busy} onClick={() => deleteHistory(entry)}><Trash2 size={16} /> Eliminar registro</button></article>; })}{!filteredHistory.length ? <p className="admin-empty">No hay cambios con estos filtros.</p> : null}</div>
           </>
         ) : null}
       </section>
 
-      {editingPost ? <AdminPostEditor publication={editingPost} courses={courses} busy={busy} onClose={() => setEditingPost(null)} onSave={savePost} /> : null}
+      {editingPost ? <AdminPostEditor publication={editingPost} courses={visibleCourses} busy={busy} onClose={() => setEditingPost(null)} onSave={savePost} /> : null}
       {toast ? <div className="toast" role="status">{toast}</div> : null}
     </main>
   );
