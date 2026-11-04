@@ -5,6 +5,7 @@ import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ClientPlasmicRootProvider } from '@/plasmic-init-client';
 import { PLASMIC } from '@/plasmic-init';
+import { MiCursoRuntime } from '@/components/mi-curso-runtime';
 
 type PlasmicData = Awaited<ReturnType<typeof PLASMIC.fetchComponentData>>;
 
@@ -27,7 +28,7 @@ export default function PlasmicPreviewPage() {
   }, []);
 
   if (failed) {
-    return <main className="plasmic-preview-error">No se pudo cargar Homepage desde Plasmic.</main>;
+    return <MiCursoRuntime />;
   }
 
   if (!plasmicData) {

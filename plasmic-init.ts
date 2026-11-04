@@ -7,6 +7,6 @@ export const PLASMIC = initPlasmicLoader({
       token: process.env.NEXT_PUBLIC_PLASMIC_PROJECT_TOKEN ?? '',
     },
   ],
-  // Keep draft mode enabled while the Plasmic transfer is being reviewed.
-  preview: true,
+  // Public pages use the published design unless preview is explicitly enabled.
+  preview: process.env.NEXT_PUBLIC_PLASMIC_PREVIEW === 'true',
 });
