@@ -40,7 +40,7 @@ export type Database = {
           curso_id: string
           id: number
           publicacion_id: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           accion: string
@@ -49,7 +49,7 @@ export type Database = {
           curso_id: string
           id?: never
           publicacion_id: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           accion?: string
@@ -58,7 +58,7 @@ export type Database = {
           curso_id?: string
           id?: never
           publicacion_id?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -123,7 +123,7 @@ export type Database = {
         Row: {
           borrada: boolean
           created_at: string
-          created_by: string
+          created_by: string | null
           curso_id: string
           fecha: string
           id: string
@@ -132,12 +132,12 @@ export type Database = {
           tipo: string
           titulo: string
           updated_at: string
-          updated_by: string
+          updated_by: string | null
         }
         Insert: {
           borrada?: boolean
           created_at?: string
-          created_by: string
+          created_by?: string | null
           curso_id: string
           fecha: string
           id?: string
@@ -146,12 +146,12 @@ export type Database = {
           tipo: string
           titulo: string
           updated_at?: string
-          updated_by: string
+          updated_by?: string | null
         }
         Update: {
           borrada?: boolean
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           curso_id?: string
           fecha?: string
           id?: string
@@ -160,7 +160,7 @@ export type Database = {
           tipo?: string
           titulo?: string
           updated_at?: string
-          updated_by?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -191,7 +191,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_delete_user: { Args: { target_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
