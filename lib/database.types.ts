@@ -88,7 +88,8 @@ export type Database = {
         Row: {
           activo: boolean
           created_at: string
-          curso_id: string
+          curso_id: string | null
+          es_profesor: boolean
           id: string
           role: string
           username: string
@@ -96,7 +97,8 @@ export type Database = {
         Insert: {
           activo?: boolean
           created_at?: string
-          curso_id: string
+          curso_id?: string | null
+          es_profesor?: boolean
           id: string
           role?: string
           username: string
@@ -104,7 +106,8 @@ export type Database = {
         Update: {
           activo?: boolean
           created_at?: string
-          curso_id?: string
+          curso_id?: string | null
+          es_profesor?: boolean
           id?: string
           role?: string
           username?: string
@@ -192,6 +195,9 @@ export type Database = {
     }
     Functions: {
       admin_delete_user: { Args: { target_id: string }; Returns: undefined }
+      crear_clase: { Args: { nombre_clase: string }; Returns: string }
+      unirse_clase: { Args: { codigo_clase: string }; Returns: string }
+      mi_codigo_clase: { Args: Record<PropertyKey, never>; Returns: string | null }
     }
     Enums: {
       [_ in never]: never

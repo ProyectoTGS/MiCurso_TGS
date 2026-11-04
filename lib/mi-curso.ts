@@ -22,8 +22,9 @@ export type Course = {
 export type Profile = {
   id: string;
   username: string;
-  curso_id: string;
+  curso_id: string | null;
   role: UserRole;
+  es_profesor: boolean;
   activo: boolean;
   created_at: string;
 };

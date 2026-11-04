@@ -186,10 +186,11 @@ function CalendarView({ publications, profiles, onOpen }: { publications: Public
   );
 }
 
-export function StudentApp({ supabase, profile, course, dark, onToggleDark, onSignOut }: {
+export function StudentApp({ supabase, profile, course, inviteCode, dark, onToggleDark, onSignOut }: {
   supabase: SupabaseClient;
   profile: Profile;
   course: Course;
+  inviteCode: string | null;
   dark: boolean;
   onToggleDark: () => void;
   onSignOut: () => void;
@@ -291,7 +292,7 @@ export function StudentApp({ supabase, profile, course, dark, onToggleDark, onSi
 
       <section className="app-column">
         <header className="app-header">
-          <h1>{course.nombre}</h1>
+          <div><h1>{course.nombre}</h1>{inviteCode ? <small>Código de clase: <strong>{inviteCode}</strong></small> : null}</div>
           <div className="header-buttons"><button className="theme-button" onClick={onToggleDark} aria-label={dark ? 'Usar modo claro' : 'Usar modo oscuro'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button><button className="user-button" onClick={() => setMenuOpen((current) => !current)} aria-label="Abrir menú de usuario">{initials(profile.username)}</button></div>
           {menuOpen ? <div className="user-menu"><strong>{profile.username}</strong><span>{course.nombre}</span>{profile.role === 'admin' ? <Link href="/admin"><Settings size={16} />Panel de control</Link> : null}<button onClick={onSignOut}><LogOut size={16} />Cerrar sesión</button></div> : null}
         </header>

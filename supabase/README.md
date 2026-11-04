@@ -1,7 +1,8 @@
 # Configuración de Supabase
 
 1. Ejecutá `schema.sql` en el editor SQL del proyecto.
-2. Ejecutá `seed.sql` para crear el curso de ejemplo.
+2. Opcionalmente, ejecutá `seed.sql` para crear cursos de ejemplo. Los cursos
+   que crea un profesor desde la app generan un código para invitar alumnos.
 3. Configurá en el hosting:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (publishable key)
@@ -16,8 +17,12 @@ where id = (
 );
 ```
 
-La aplicación no permite cambiar roles desde la interfaz. El Historial tampoco
-se puede insertar, editar ni borrar mediante la API: lo generan los triggers.
+La aplicación no permite que un usuario se asigne el rol de administrador. Los
+profesores crean una clase y comparten su código con sus alumnos. El historial
+lo generan los triggers y los administradores pueden eliminar registros.
+
+Para actualizar una instalación existente con clases por código, aplicá
+`changes/clases-con-codigo.sql` una sola vez antes de publicar la nueva app.
 
 ## Acceso con Google
 

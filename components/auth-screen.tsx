@@ -3,19 +3,16 @@
 import { BookOpen, Eye, EyeOff, LoaderCircle, Moon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Course } from '@/lib/mi-curso';
 
 type AuthMode = 'login' | 'register';
 
 export function AuthScreen({
   supabase,
-  courses,
   dark,
   onToggleDark,
   message,
 }: {
   supabase: SupabaseClient;
-  courses: Course[];
   dark: boolean;
   onToggleDark: () => void;
   message?: string;
@@ -24,7 +21,7 @@ export function AuthScreen({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [courseId, setCourseId] = useState(courses[0]?.id ?? '');
+  const [teacher, setTeacher] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -55,8 +52,8 @@ export function AuthScreen({
       return;
     }
 
-    if (!username.trim() || !courseId) {
-      setFeedback('Completá el nombre de usuario y el curso.');
+    if (!username.trim()) {
+      setFeedback('Completá el nombre de usuario.');
       setBusy(false);
       return;
     }
@@ -64,7 +61,7 @@ export function AuthScreen({
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { username: username.trim(), curso_id: courseId } },
+      options: { data: { username: username.trim(), tipo: teacher ? 'profesor' : 'alumno' } },
     });
 
     if (error) {
@@ -110,12 +107,12 @@ export function AuthScreen({
         <form onSubmit={submit}>
           {mode === 'register' ? <>
             <label>Nombre de usuario<input value={username} onChange={(event) => setUsername(event.target.value)} maxLength={40} autoComplete="nickname" required /></label>
-            <label>Curso<select value={courseId} onChange={(event) => setCourseId(event.target.value)} required><option value="">Elegí un curso</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label>
+            <label>Tipo de cuenta<select value={teacher ? 'profesor' : 'alumno'} onChange={(event) => setTeacher(event.target.value === 'profesor')}><option value="alumno">Soy alumno</option><option value="profesor">Soy profesor</option></select></label>
           </> : null}
           <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
           <label>Contraseña<span className="password-field"><input type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required /><button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></span></label>
           {feedback || message ? <p className="form-feedback" role="status">{feedback || message}</p> : null}
-          <button className="primary-button" disabled={busy || (mode === 'register' && !courses.length)}>{busy ? <LoaderCircle className="spin" size={18} /> : null}{mode === 'login' ? 'Ingresar' : 'Crear cuenta'}</button>
+          <button className="primary-button" disabled={busy}>{busy ? <LoaderCircle className="spin" size={18} /> : null}{mode === 'login' ? 'Ingresar' : 'Crear cuenta'}</button>
         </form>
       </section>
     </main>
