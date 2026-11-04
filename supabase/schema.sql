@@ -16,7 +16,7 @@ create table if not exists public.profiles (
   username extensions.citext not null unique check (char_length(trim(username::text)) between 2 and 40),
   curso_id uuid not null references public.cursos(id),
   role text not null default 'alumno' check (role in ('alumno', 'admin')),
-  activo boolean not null default true,
+  activo boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -103,7 +103,7 @@ begin
   requested_course := (new.raw_user_meta_data ->> 'curso_id')::uuid;
 
   insert into public.profiles (id, username, curso_id, role, activo)
-  values (new.id, requested_username, requested_course, 'alumno', true);
+  values (new.id, requested_username, requested_course, 'alumno', false);
   return new;
 end;
 $$;
@@ -258,7 +258,7 @@ drop policy if exists "admin edita perfiles" on public.profiles;
 create policy "admin edita perfiles" on public.profiles for update to authenticated using ((select private.is_admin())) with check ((select private.is_admin()));
 drop policy if exists "alumno completa su perfil" on public.profiles;
 create policy "alumno completa su perfil" on public.profiles for insert to authenticated with check (
-  id = (select auth.uid()) and role = 'alumno' and activo = true
+  id = (select auth.uid()) and role = 'alumno' and activo = false
 );
 
 drop policy if exists "publicaciones del curso" on public.publicaciones;

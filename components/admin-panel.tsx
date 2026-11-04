@@ -307,14 +307,14 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
 
         {!loading && section === 'users' ? (
           <>
-            <div className="admin-section-tools"><label className="admin-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar usuario" /></label><span>{filteredProfiles.length} usuarios</span></div>
+            <div className="admin-section-tools"><label className="admin-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar usuario" /></label><span>{filteredProfiles.length} usuarios · {inactiveProfiles} sin acceso</span></div>
             <div className="admin-list">
               {filteredProfiles.map((profile) => (
                 <div className="admin-user-row" key={profile.id}>
                   <span className="admin-user-avatar">{initials(profile.username)}</span>
                   <input aria-label="Nombre de usuario" value={profile.username} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, username: event.target.value } : item))} />
                   <select aria-label="Curso" value={profile.curso_id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, curso_id: event.target.value } : item))}>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select>
-                  <label className="active-check"><input type="checkbox" checked={profile.activo} disabled={profile.id === admin.id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, activo: event.target.checked } : item))} />Activo</label>
+                  <label className="active-check"><input type="checkbox" checked={profile.activo} disabled={profile.id === admin.id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, activo: event.target.checked } : item))} />{profile.activo ? 'Acceso habilitado' : 'Aprobar acceso'}</label>
                   <button className="secondary-button" disabled={busy} onClick={() => saveUser(profile)}>Guardar</button>
                 </div>
               ))}

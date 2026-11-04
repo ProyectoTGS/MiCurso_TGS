@@ -24,6 +24,7 @@ export function MiCursoRuntime() {
   const [username, setUsername] = useState('');
   const [courseId, setCourseId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const loadIdentity = useCallback(async (userId: string) => {
     if (!supabase) return;
@@ -43,11 +44,13 @@ export function MiCursoRuntime() {
     const nextProfile = data as Profile;
     setNeedsProfile(null);
     if (!nextProfile.activo) {
-      await supabase.auth.signOut();
-      setAuthMessage('Tu cuenta está desactivada.');
+      setProfile(null);
+      setCourse(null);
+      setPendingApproval(true);
       setReady(true);
       return;
     }
+    setPendingApproval(false);
     if (nextProfile.role === 'admin') {
       window.location.replace('/admin');
       return;
@@ -76,6 +79,7 @@ export function MiCursoRuntime() {
         setProfile(null);
         setCourse(null);
         setNeedsProfile(null);
+        setPendingApproval(false);
         setReady(true);
       } else if (event === 'SIGNED_IN') {
         window.setTimeout(() => void loadIdentity(session.user.id), 0);
@@ -122,6 +126,10 @@ export function MiCursoRuntime() {
       <button className="primary-button" disabled={saving || !courses.length}>{saving ? 'Guardando…' : 'Continuar'}</button>
       <button type="button" className="google-button" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button>
     </form></section></main>;
+  }
+
+  if (pendingApproval) {
+    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><h1>Acceso pendiente</h1><p>Tu cuenta todavía no tiene acceso al curso. Contactá a un administrador para que revise tu solicitud.</p><button className="primary-button" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button></section></main>;
   }
 
   if (!profile || !course) {
