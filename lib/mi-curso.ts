@@ -36,8 +36,8 @@ export type Publication = {
   titulo: string;
   fecha: string;
   nota: string | null;
-  created_by: string;
-  updated_by: string;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
   borrada: boolean;
@@ -50,7 +50,7 @@ export type HistoryEntry = {
   id: number;
   publicacion_id: string;
   curso_id: string;
-  user_id: string;
+  user_id: string | null;
   accion: HistoryAction;
   cambios: HistoryChanges;
   created_at: string;

@@ -191,6 +191,33 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
     setBusy(false);
   }
 
+  async function deleteUser(profile: Profile) {
+    if (!window.confirm(`¿Eliminar la cuenta de ${profile.username}? No se puede deshacer. Las publicaciones del curso se conservarán sin identificar a la cuenta.`)) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('admin_delete_user', { target_id: profile.id });
+    if (error) notify(error.message); else notify('Cuenta eliminada.');
+    await loadAll();
+    setBusy(false);
+  }
+
+  async function deleteHistory(entry: HistoryEntry) {
+    if (!window.confirm('¿Eliminar este registro del historial? Esta acción no se puede deshacer.')) return;
+    setBusy(true);
+    const { data, error } = await supabase.from('historial').delete().eq('id', entry.id).select('id');
+    if (error || !data?.length) notify(error?.message ?? 'No se pudo eliminar el registro.'); else notify('Registro eliminado.');
+    await loadAll();
+    setBusy(false);
+  }
+
+  async function deletePostPermanently(publication: Publication) {
+    if (!window.confirm(`¿Eliminar definitivamente «${publication.titulo}» y su historial? Esta acción no se puede deshacer.`)) return;
+    setBusy(true);
+    const { data, error } = await supabase.from('publicaciones').delete().eq('id', publication.id).select('id');
+    if (error || !data?.length) notify(error?.message ?? 'No se pudo eliminar la publicación.'); else notify('Publicación eliminada definitivamente.');
+    await loadAll();
+    setBusy(false);
+  }
+
   async function createCourse(event: React.FormEvent) {
     event.preventDefault();
     if (!newCourse.trim()) return;
@@ -290,7 +317,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
                 <div className="admin-recent-list">
                   {history.slice(0, 6).map((entry) => {
                     const publication = publicationMap.get(entry.publicacion_id);
-                    return <article key={entry.id}><span>{initials(profileMap.get(entry.user_id)?.username ?? 'Usuario')}</span><div><strong>{profileMap.get(entry.user_id)?.username ?? 'Usuario'} {entry.accion}</strong><small>{publication?.titulo ?? 'Publicación'} · {courseMap.get(entry.curso_id)?.nombre}</small></div><time>{relativeTime(entry.created_at)}</time></article>;
+                    return <article key={entry.id}><span>{initials(profileMap.get(entry.user_id ?? '')?.username ?? 'Usuario')}</span><div><strong>{profileMap.get(entry.user_id ?? '')?.username ?? 'Usuario eliminado'} {entry.accion}</strong><small>{publication?.titulo ?? 'Publicación'} · {courseMap.get(entry.curso_id)?.nombre}</small></div><time>{relativeTime(entry.created_at)}</time></article>;
                   })}
                   {!history.length ? <p className="admin-empty">Todavía no hay actividad.</p> : null}
                 </div>
@@ -316,6 +343,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
                   <select aria-label="Curso" value={profile.curso_id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, curso_id: event.target.value } : item))}>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select>
                   <label className="active-check"><input type="checkbox" checked={profile.activo} disabled={profile.id === admin.id} onChange={(event) => setProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, activo: event.target.checked } : item))} />{profile.activo ? 'Acceso habilitado' : 'Aprobar acceso'}</label>
                   <button className="secondary-button" disabled={busy} onClick={() => saveUser(profile)}>Guardar</button>
+                  {profile.role !== 'admin' ? <button className="danger-button" disabled={busy} onClick={() => deleteUser(profile)} aria-label={`Eliminar cuenta de ${profile.username}`}><Trash2 size={17} /> Eliminar</button> : null}
                 </div>
               ))}
             </div>
@@ -326,7 +354,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
           <>
             <div className="admin-filters"><label>Curso<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option>Todos</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label><label>Materia<select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value as 'Todas' | Subject)}><option>Todas</option>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label></div>
             <div className="admin-list admin-board-list">
-              {filteredPublications.map((publication) => <article className={`admin-post-row ${publication.borrada ? 'deleted' : ''}`} key={publication.id}><div><strong>{publication.titulo}</strong><span>{courseMap.get(publication.curso_id)?.nombre} · {publication.materia} · {publication.tipo === 'tp' ? 'TP' : 'Prueba'}{publication.borrada ? ' · Borrada' : ''}</span></div><button onClick={() => setEditingPost(publication)} aria-label="Editar"><Pencil size={17} /></button>{publication.borrada ? <button onClick={() => setDeleted(publication, false)} aria-label="Restaurar"><RotateCcw size={17} /></button> : <button className="delete-icon" onClick={() => setDeleted(publication, true)} aria-label="Borrar"><Trash2 size={17} /></button>}</article>)}
+              {filteredPublications.map((publication) => <article className={`admin-post-row ${publication.borrada ? 'deleted' : ''}`} key={publication.id}><div><strong>{publication.titulo}</strong><span>{courseMap.get(publication.curso_id)?.nombre} · {publication.materia} · {publication.tipo === 'tp' ? 'TP' : 'Prueba'}{publication.borrada ? ' · Borrada' : ''}</span></div><button onClick={() => setEditingPost(publication)} aria-label="Editar"><Pencil size={17} /></button>{publication.borrada ? <><button onClick={() => setDeleted(publication, false)} aria-label="Restaurar"><RotateCcw size={17} /></button><button className="delete-icon" disabled={busy} onClick={() => deletePostPermanently(publication)} aria-label="Eliminar definitivamente"><Trash2 size={17} /></button></> : <button className="delete-icon" onClick={() => setDeleted(publication, true)} aria-label="Borrar"><Trash2 size={17} /></button>}</article>)}
               {!filteredPublications.length ? <p className="admin-empty">No hay publicaciones con estos filtros.</p> : null}
             </div>
           </>
@@ -342,7 +370,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
         {!loading && section === 'history' ? (
           <>
             <div className="admin-filters"><label>Curso<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option>Todos</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.nombre}</option>)}</select></label><label>Usuario<select value={userFilter} onChange={(event) => setUserFilter(event.target.value)}><option>Todos</option>{profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.username}</option>)}</select></label><label>Materia<select value={subjectFilter} onChange={(event) => setSubjectFilter(event.target.value as 'Todas' | Subject)}><option>Todas</option>{SUBJECTS.map((subject) => <option key={subject}>{subject}</option>)}</select></label></div>
-            <div className="admin-history">{filteredHistory.map((entry) => { const publication = publicationMap.get(entry.publicacion_id); return <article key={entry.id}><div><strong>{profileMap.get(entry.user_id)?.username ?? 'Usuario'} · {entry.accion}</strong><time>{relativeTime(entry.created_at)}</time></div><p>{courseMap.get(entry.curso_id)?.nombre} · {publication?.materia} · {publication?.titulo}</p>{entry.accion === 'editó' ? <ul>{Object.entries(entry.cambios).filter(([field, value]) => field !== 'publicacion' && value && typeof value === 'object' && 'anterior' in value && 'nuevo' in value).map(([field, value]) => { const change = value as { anterior: unknown; nuevo: unknown }; return <li key={field}>{FIELD_LABELS[field] ?? field}: {formatChangeValue(field, change.anterior)} → {formatChangeValue(field, change.nuevo)}</li>; })}</ul> : null}</article>; })}{!filteredHistory.length ? <p className="admin-empty">No hay cambios con estos filtros.</p> : null}</div>
+            <div className="admin-history">{filteredHistory.map((entry) => { const publication = publicationMap.get(entry.publicacion_id); return <article key={entry.id}><div><strong>{profileMap.get(entry.user_id ?? '')?.username ?? 'Usuario eliminado'} · {entry.accion}</strong><time>{relativeTime(entry.created_at)}</time></div><p>{courseMap.get(entry.curso_id)?.nombre} · {publication?.materia} · {publication?.titulo}</p>{entry.accion === 'editó' ? <ul>{Object.entries(entry.cambios).filter(([field, value]) => field !== 'publicacion' && value && typeof value === 'object' && 'anterior' in value && 'nuevo' in value).map(([field, value]) => { const change = value as { anterior: unknown; nuevo: unknown }; return <li key={field}>{FIELD_LABELS[field] ?? field}: {formatChangeValue(field, change.anterior)} → {formatChangeValue(field, change.nuevo)}</li>; })}</ul> : null}<button className="danger-button" disabled={busy} onClick={() => deleteHistory(entry)}><Trash2 size={16} /> Eliminar registro</button></article>; })}{!filteredHistory.length ? <p className="admin-empty">No hay cambios con estos filtros.</p> : null}</div>
           </>
         ) : null}
       </section>

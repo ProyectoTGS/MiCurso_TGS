@@ -52,8 +52,8 @@ const EMPTY_DRAFT: Draft = {
 function PublicationCard({ publication, profiles, onOpen }: { publication: Publication; profiles: Map<string, Profile>; onOpen: () => void }) {
   const days = daysUntil(publication.fecha);
   const urgency = days >= 0 && days < 2 ? 'urgent' : days >= 0 && days <= 7 ? 'soon' : '';
-  const author = profiles.get(publication.created_by)?.username ?? 'Alumno';
-  const editor = profiles.get(publication.updated_by)?.username;
+  const author = profiles.get(publication.created_by ?? '')?.username ?? 'Usuario eliminado';
+  const editor = profiles.get(publication.updated_by ?? '')?.username;
   const edited = publication.updated_by !== publication.created_by;
 
   return (
@@ -80,7 +80,7 @@ function ChangeDetails({ entry }: { entry: HistoryEntry }) {
 
 function HistoryRow({ entry, publications, profiles }: { entry: HistoryEntry; publications: Map<string, Publication>; profiles: Map<string, Profile> }) {
   const publication = publications.get(entry.publicacion_id);
-  const username = profiles.get(entry.user_id)?.username ?? 'Usuario';
+  const username = profiles.get(entry.user_id ?? '')?.username ?? 'Usuario eliminado';
   return (
     <article className="history-row" style={{ '--subject': publication ? SUBJECT_COLORS[publication.materia] : '#7b8496' } as React.CSSProperties}>
       <span className="history-avatar">{initials(username)}</span>
@@ -133,7 +133,7 @@ function PublicationDetail({ publication, history, publications, profiles, isAdm
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const author = profiles.get(publication.created_by)?.username ?? 'Alumno';
+  const author = profiles.get(publication.created_by ?? '')?.username ?? 'Usuario eliminado';
   const publicationHistory = history.filter((entry) => entry.publicacion_id === publication.id);
   return (
     <div className="modal-layer" role="dialog" aria-modal="true" aria-labelledby="detail-title">

@@ -28,8 +28,8 @@ create table if not exists public.publicaciones (
   titulo text not null check (char_length(trim(titulo)) between 2 and 100),
   fecha date not null,
   nota text check (nota is null or char_length(nota) <= 240),
-  created_by uuid not null references public.profiles(id),
-  updated_by uuid not null references public.profiles(id),
+  created_by uuid references public.profiles(id) on delete set null,
+  updated_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   borrada boolean not null default false
@@ -37,9 +37,9 @@ create table if not exists public.publicaciones (
 
 create table if not exists public.historial (
   id bigint generated always as identity primary key,
-  publicacion_id uuid not null references public.publicaciones(id),
+  publicacion_id uuid not null references public.publicaciones(id) on delete cascade,
   curso_id uuid not null references public.cursos(id),
-  user_id uuid not null references public.profiles(id),
+  user_id uuid references public.profiles(id) on delete set null,
   accion text not null check (accion in ('publicó', 'editó', 'borró', 'restauró')),
   cambios jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
@@ -228,8 +228,8 @@ grant insert, update on table public.cursos to authenticated;
 grant select on table public.profiles to authenticated;
 grant insert (id, username, curso_id) on public.profiles to authenticated;
 grant update (username, curso_id, activo) on table public.profiles to authenticated;
-grant select, insert, update on table public.publicaciones to authenticated;
-grant select on table public.historial to authenticated;
+grant select, insert, update, delete on table public.publicaciones to authenticated;
+grant select, delete on table public.historial to authenticated;
 
 grant usage on schema private to authenticated;
 revoke all on function private.is_admin() from public;
@@ -287,6 +287,35 @@ create policy "historial del curso" on public.historial for select to authentica
   (select private.is_admin())
   or curso_id = (select private.current_curso_id())
 );
+
+drop policy if exists "admin elimina publicaciones" on public.publicaciones;
+create policy "admin elimina publicaciones" on public.publicaciones for delete to authenticated using ((select private.is_admin()));
+drop policy if exists "admin elimina historial" on public.historial;
+create policy "admin elimina historial" on public.historial for delete to authenticated using ((select private.is_admin()));
+
+create or replace function private.admin_delete_user(target_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if (select auth.uid()) is null or not (select private.is_admin()) then
+    raise exception 'No tenés permiso para eliminar cuentas.' using errcode = '42501';
+  end if;
+  if target_id = (select auth.uid()) then
+    raise exception 'No podés eliminar tu propia cuenta.';
+  end if;
+  perform 1 from public.profiles where id = target_id and role = 'alumno' for update;
+  if not found then raise exception 'No se encontró una cuenta de alumno para eliminar.'; end if;
+  delete from auth.users where id = target_id;
+  if not found then raise exception 'No se encontró la cuenta.'; end if;
+end;
+$$;
+revoke all on function private.admin_delete_user(uuid) from public, anon;
+grant execute on function private.admin_delete_user(uuid) to authenticated;
+create or replace function public.admin_delete_user(target_id uuid)
+returns void language sql security invoker set search_path = '' as $$
+  select private.admin_delete_user(target_id);
+$$;
+revoke all on function public.admin_delete_user(uuid) from public, anon;
+grant execute on function public.admin_delete_user(uuid) to authenticated;
 
 do $$
 begin

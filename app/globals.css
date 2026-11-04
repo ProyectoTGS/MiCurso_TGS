@@ -231,7 +231,7 @@ button { color: inherit; }
 .active-check input { width: 17px; min-height: 17px; }
 .admin-filters { margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
 .admin-filters label { min-width: 150px; }
-.admin-post-row { display: grid; grid-template-columns: minmax(0,1fr) 38px 38px; align-items: center; gap: 7px; }
+.admin-post-row { display: grid; grid-template-columns: minmax(0,1fr) repeat(3, 38px); align-items: center; gap: 7px; }
 .admin-post-row.deleted { opacity: .55; }
 .admin-post-row div { min-width: 0; display: grid; }
 .admin-post-row strong, .admin-post-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -261,7 +261,7 @@ button { color: inherit; }
   .admin-stats { grid-template-columns: repeat(5, minmax(0,1fr)); }
   .admin-overview-grid { grid-template-columns: minmax(0,1.55fr) minmax(250px,.75fr); }
   .admin-board-list { grid-template-columns: repeat(2, minmax(0,1fr)); }
-  .admin-user-row { grid-template-columns: 36px minmax(180px,1fr) minmax(150px,.7fr) auto auto; align-items: center; }
+  .admin-user-row { grid-template-columns: 36px minmax(140px,1fr) minmax(120px,.7fr) auto auto auto; align-items: center; }
   .admin-user-avatar { display: grid; }
 }
 
