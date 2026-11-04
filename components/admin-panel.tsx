@@ -192,7 +192,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
   }
 
   async function deleteUser(profile: Profile) {
-    if (!window.confirm(`¿Eliminar la cuenta de ${profile.username}? No se puede deshacer. Las publicaciones del curso se conservarán sin identificar a la cuenta.`)) return;
+    if (!window.confirm(`¿Eliminar la cuenta de ${profile.username}? No se puede deshacer. Las publicaciones del curso se conservarán y dejarán de mostrar esa cuenta como autora.`)) return;
     setBusy(true);
     const { error } = await supabase.rpc('admin_delete_user', { target_id: profile.id });
     if (error) notify(error.message); else notify('Cuenta eliminada.');
