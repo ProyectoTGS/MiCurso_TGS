@@ -11,3 +11,7 @@ Aplicación de agenda para estudiantes, construida con React, vinext y Supabase.
 Para preparar la base de datos y el acceso con Google, consultá [supabase/README.md](supabase/README.md). El proveedor Google requiere configuración adicional antes de funcionar.
 
 La página principal carga `Homepage` desde Plasmic cuando se configura el token; si no está configurado o no se puede cargar el diseño, muestra la aplicación existente. Se usa el diseño publicado; para revisar borradores, configurá `NEXT_PUBLIC_PLASMIC_PREVIEW=true` en desarrollo. La aplicación actual sigue siendo un componente de código: sus elementos internos aún no son editables individualmente en Plasmic.
+
+## Vercel
+
+Importá el repositorio como proyecto Next.js y configurá en Vercel las variables de `.env.example`. `NEXT_PUBLIC_SITE_URL` debe ser la URL pública final. El dominio de Vercel debe agregarse a las URL permitidas en Supabase Auth. Antes de abrir el registro a todos, configurá SMTP de producción y probá las confirmaciones.

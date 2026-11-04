@@ -1,20 +1,9 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import { PwaRegister } from '@/components/pwa-register';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
-
 export const metadata: Metadata = {
-  metadataBase: new URL('https://mi-curso-agenda-5b.fliasaint.chatgpt.site'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000')),
   title: 'Mi Curso',
   description: 'Pruebas y trabajos prácticos de tu curso, en un solo lugar.',
   applicationName: 'Mi Curso',
@@ -36,10 +25,9 @@ export const metadata: Metadata = {
     title: 'Mi Curso',
     description: 'Pruebas y trabajos prácticos de tu curso.',
     type: 'website',
-    url: 'https://mi-curso-agenda-5b.fliasaint.chatgpt.site',
     images: [
       {
-        url: 'https://mi-curso-agenda-5b.fliasaint.chatgpt.site/og.png',
+        url: '/og.png',
         width: 1734,
         height: 907,
         alt: 'Mi Curso',
@@ -50,7 +38,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Mi Curso',
     description: 'Pruebas y trabajos prácticos de tu curso.',
-    images: ['https://mi-curso-agenda-5b.fliasaint.chatgpt.site/og.png'],
+    images: ['/og.png'],
   },
 };
 
@@ -62,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         <PwaRegister />
         {children}
