@@ -103,7 +103,7 @@ function AdminPostEditor({
   );
 }
 
-export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admin: Profile }) {
+export function AdminPanel({ supabase, admin, email }: { supabase: SupabaseClient; admin: Profile; email: string }) {
   const [section, setSection] = useState<AdminSection>('posts');
   const [courses, setCourses] = useState<Course[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -275,7 +275,7 @@ export function AdminPanel({ supabase, admin }: { supabase: SupabaseClient; admi
             return <button key={item.id} className={section === item.id ? 'active' : ''} onClick={() => setSection(item.id)}><Icon size={18} />{item.label}</button>;
           })}
         </nav>
-        <div className="admin-identity"><span>{initials(admin.username)}</span><div><strong>{admin.username}</strong><small>Administrador principal</small></div></div>
+        <div className="admin-identity"><span>{initials(admin.username)}</span><div><strong>{admin.username}</strong><small>{email}</small><small>Administrador principal</small></div></div>
         <button className="admin-signout" onClick={() => void supabase.auth.signOut().then(() => { window.location.href = '/'; })}><LogOut size={17} />Cerrar sesión</button>
       </aside>
 

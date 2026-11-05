@@ -1,5 +1,5 @@
-const CACHE = 'mi-curso-v6';
-const SHELL = ['/', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
+const CACHE = 'mi-curso-v7';
+const SHELL = ['/offline.html', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -13,19 +13,18 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  if (request.method !== 'GET' || new URL(request.url).pathname.startsWith('/api/')) return;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put('/', copy));
-        return response;
-      }).catch(() => caches.match('/')),
+      fetch(request).catch(() => caches.match('/offline.html')),
     );
     return;
   }
 
+  // Cache immutable assets only; never cache account pages or Next.js RSC data.
+  if (!url.pathname.startsWith('/_next/static/') && !SHELL.includes(url.pathname)) return;
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).then((response) => {
       if (response.ok && new URL(request.url).origin === self.location.origin) {

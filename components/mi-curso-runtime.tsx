@@ -1,11 +1,10 @@
 'use client';
 
-import { Database, LoaderCircle } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { BookOpen, Database, GraduationCap, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { AuthScreen } from '@/components/auth-screen';
 import { StudentApp } from '@/components/student-app';
-import { getSupabaseClient } from '@/lib/supabase';
-import type { Course, Profile } from '@/lib/mi-curso';
+import { useAccount } from '@/lib/use-account';
 
 /**
  * The complete Mi Curso experience exposed as a reusable component.
@@ -13,93 +12,23 @@ import type { Course, Profile } from '@/lib/mi-curso';
  * homepage keeps rendering the exact same runtime.
  */
 export function MiCursoRuntime() {
-  const supabase = getSupabaseClient();
+  const { supabase, loading, userId, email, profile, course, inviteCode, error, reload } = useAccount();
+  const needsProfile = !profile ? userId : null;
   const [dark, setDark] = useState(false);
-  const [ready, setReady] = useState(() => !supabase);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [course, setCourse] = useState<Course | null>(null);
   const [authMessage, setAuthMessage] = useState('');
-  const [needsProfile, setNeedsProfile] = useState<string | null>(null);
   const [username, setUsername] = useState('');
   const [teacher, setTeacher] = useState(false);
   const [className, setClassName] = useState('');
   const [classCode, setClassCode] = useState('');
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [pendingApproval, setPendingApproval] = useState(false);
-
-  const loadIdentity = useCallback(async (userId: string) => {
-    if (!supabase) return;
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    if (error?.code === 'PGRST116') {
-      setNeedsProfile(userId);
-      setReady(true);
-      return;
-    }
-    if (error || !data) {
-      setProfile(null);
-      setCourse(null);
-      setAuthMessage('No se pudo cargar tu perfil.');
-      setReady(true);
-      return;
-    }
-    const nextProfile = data as Profile;
-    setNeedsProfile(null);
-    setInviteCode(null);
-    if (!nextProfile.activo) {
-      setProfile(null);
-      setCourse(null);
-      setPendingApproval(true);
-      setReady(true);
-      return;
-    }
-    setPendingApproval(false);
-    if (nextProfile.role === 'admin') {
-      window.location.replace('/admin');
-      return;
-    }
-    if (!nextProfile.curso_id) {
-      setProfile(nextProfile);
-      setCourse(null);
-      setReady(true);
-      return;
-    }
-    const { data: courseData } = await supabase.from('cursos').select('*').eq('id', nextProfile.curso_id).single();
-    if (nextProfile.es_profesor) {
-      const { data: code } = await supabase.rpc('mi_codigo_clase');
-      setInviteCode(typeof code === 'string' ? code : null);
-    }
-    setProfile(nextProfile);
-    setCourse((courseData as Course | null) ?? null);
-    setReady(true);
-  }, [supabase]);
-
   useEffect(() => {
     const themeLoad = window.setTimeout(() => setDark(localStorage.getItem('mi-curso-theme') === 'dark'), 0);
     return () => window.clearTimeout(themeLoad);
   }, []);
 
   useEffect(() => {
-    if (!supabase) return;
-
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user.id) void loadIdentity(data.session.user.id);
-      else setReady(true);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        setProfile(null);
-        setCourse(null);
-        setNeedsProfile(null);
-        setInviteCode(null);
-        setPendingApproval(false);
-        setReady(true);
-      } else if (event === 'SIGNED_IN') {
-        window.setTimeout(() => void loadIdentity(session.user.id), 0);
-      }
-    });
-    return () => listener.subscription.unsubscribe();
-  }, [loadIdentity, supabase]);
+    if (!loading && profile?.activo && profile.role === 'admin') window.location.replace('/admin');
+  }, [loading, profile]);
 
   function toggleDark() {
     setDark((current) => {
@@ -118,7 +47,7 @@ export function MiCursoRuntime() {
     if (error) {
       setAuthMessage(error.code === '23505' ? 'Ese nombre de usuario ya está en uso. Elegí otro.' : 'No se pudo guardar tu perfil. Revisá los datos e intentá de nuevo.');
     } else {
-      await loadIdentity(needsProfile);
+      await reload();
     }
     setSaving(false);
   }
@@ -132,7 +61,7 @@ export function MiCursoRuntime() {
       ? await supabase.rpc('crear_clase', { nombre_clase: className.trim() })
       : await supabase.rpc('unirse_clase', { codigo_clase: classCode.trim() });
     if (error) setAuthMessage(error.message);
-    else await loadIdentity(profile.id);
+    else await reload();
     setSaving(false);
   }
 
@@ -140,12 +69,16 @@ export function MiCursoRuntime() {
     return <main className={`setup-page ${dark ? 'dark' : ''}`}><section><Database size={30} /><h1>Configurar Supabase</h1><p>Faltan NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.</p></section></main>;
   }
 
-  if (!ready) {
+  if (loading || (profile?.activo && profile.role === 'admin')) {
     return <main className={`loading-page ${dark ? 'dark' : ''}`}><LoaderCircle className="spin" size={28} /><span>Cargando</span></main>;
   }
 
+  if (error) {
+    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><p role="alert">{error}</p><button className="primary-button" onClick={() => void reload()}>Reintentar</button><button className="google-button" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button></section></main>;
+  }
+
   if (needsProfile) {
-    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><h1>Completá tu perfil</h1><p>Elegí un nombre de usuario y el tipo de cuenta para continuar.</p><form onSubmit={completeProfile}>
+    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><h1>Completá tu perfil</h1><p>Elegí un nombre de usuario y el tipo de cuenta para continuar.</p><p className="account-email">{email}</p><form onSubmit={completeProfile}>
       <label>Nombre de usuario<input value={username} onChange={(event) => setUsername(event.target.value)} minLength={2} maxLength={40} autoComplete="nickname" required /></label>
       <label>Tipo de cuenta<select value={teacher ? 'profesor' : 'alumno'} onChange={(event) => setTeacher(event.target.value === 'profesor')}><option value="alumno">Soy alumno</option><option value="profesor">Soy profesor</option></select></label>
       {authMessage ? <p className="form-feedback" role="status">{authMessage}</p> : null}
@@ -154,20 +87,31 @@ export function MiCursoRuntime() {
     </form></section></main>;
   }
 
-  if (profile && !course && !profile.curso_id) {
-    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><h1>Hola, {profile.username}</h1><p>Unite a una clase para ver su tablón.{profile.es_profesor ? ' También podés crear una clase y compartir su código.' : ''}</p>
-      {profile.es_profesor ? <form onSubmit={(event) => void handleClass(event, 'create')}><label>Nombre de la clase<input value={className} onChange={(event) => setClassName(event.target.value)} minLength={2} maxLength={40} required /></label><button className="primary-button" disabled={saving}>Crear clase</button></form> : null}
-      <form onSubmit={(event) => void handleClass(event, 'join')}><label>Código de clase<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={12} required /></label><button className="google-button" disabled={saving}>Unirme a una clase</button></form>
-      {authMessage ? <p className="form-feedback" role="status">{authMessage}</p> : null}<button type="button" className="google-button" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button></section></main>;
+  if (profile?.activo && !profile.curso_id) {
+    const isTeacher = profile.es_profesor;
+    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card" aria-labelledby="class-title">
+      <div className="auth-brand"><span>{isTeacher ? <GraduationCap size={24} /> : <BookOpen size={24} />}</span><strong>Mi Curso · {isTeacher ? 'Profesor' : 'Alumno'}</strong></div>
+      <h1 id="class-title">{isTeacher ? 'Crear una clase' : 'Entrar a una clase'}</h1>
+      <p>{isTeacher ? 'Elegí el nombre de tu clase. Después vas a recibir un código para compartir con tus alumnos.' : 'Pedile el código a tu profesor e ingresalo para participar en el tablón de tu clase.'}</p>
+      <p className="account-email">{email}</p>
+      <form onSubmit={(event) => void handleClass(event, isTeacher ? 'create' : 'join')}>
+        {isTeacher
+          ? <label>Nombre de la clase<input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Por ejemplo: Historia de 6° A" minLength={2} maxLength={40} required /></label>
+          : <label>Código de clase<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} placeholder="Código de 12 caracteres" autoComplete="off" autoCapitalize="characters" spellCheck={false} minLength={12} maxLength={12} required /></label>}
+        {authMessage ? <p className="form-feedback" role="status">{authMessage}</p> : null}
+        <button className="primary-button" disabled={saving}>{saving ? 'Guardando…' : isTeacher ? 'Crear una clase' : 'Entrar a la clase'}</button>
+        <button type="button" className="google-button" onClick={() => void supabase.auth.signOut()}>Cambiar de cuenta</button>
+      </form>
+    </section></main>;
   }
 
-  if (pendingApproval) {
-    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><h1>Acceso pendiente</h1><p>Tu cuenta todavía no tiene acceso al curso. Contactá a un administrador para que revise tu solicitud.</p><button className="primary-button" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button></section></main>;
+  if (profile && !profile.activo) {
+    return <main className={`auth-page ${dark ? 'dark' : ''}`}><section className="auth-card"><h1>Cuenta desactivada</h1><p>Un administrador desactivó esta cuenta. Contactalo para recuperar el acceso.</p><button className="primary-button" onClick={() => void supabase.auth.signOut()}>Cerrar sesión</button></section></main>;
   }
 
   if (!profile || !course) {
     return <AuthScreen supabase={supabase} dark={dark} onToggleDark={toggleDark} message={authMessage} />;
   }
 
-  return <StudentApp supabase={supabase} profile={profile} course={course} inviteCode={inviteCode} dark={dark} onToggleDark={toggleDark} onClassChanged={() => void loadIdentity(profile.id)} onSignOut={() => void supabase.auth.signOut()} />;
+  return <StudentApp key={profile.id + ':' + course.id} supabase={supabase} profile={profile} course={course} inviteCode={inviteCode} dark={dark} onToggleDark={toggleDark} onClassChanged={() => void reload()} onSignOut={() => void supabase.auth.signOut()} />;
 }

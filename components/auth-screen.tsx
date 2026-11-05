@@ -83,7 +83,7 @@ export function AuthScreen({
     setFeedback('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: `${window.location.origin}/`, queryParams: { prompt: 'select_account' } },
     });
     if (error) {
       setFeedback('No se pudo iniciar sesión con Google. Intentá de nuevo.');

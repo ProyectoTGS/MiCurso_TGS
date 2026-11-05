@@ -30,6 +30,7 @@ button { color: inherit; }
 .auth-brand > span { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: var(--blue); color: white; }
 .auth-brand strong { font-size: 18px; }
 .auth-card h1 { margin: 0 0 20px; font-size: 27px; letter-spacing: -.04em; }
+.account-email { overflow-wrap: anywhere; color: var(--muted); font-size: 13px; margin: 16px 0 22px; }
 .auth-tabs { margin-bottom: 22px; padding: 4px; border-radius: 13px; display: grid; grid-template-columns: 1fr 1fr; background: var(--paper); }
 .auth-tabs button { min-height: 38px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; }
 .auth-tabs button.active { background: var(--card); color: var(--ink); font-weight: 750; box-shadow: 0 3px 10px rgba(31,42,73,.08); }
