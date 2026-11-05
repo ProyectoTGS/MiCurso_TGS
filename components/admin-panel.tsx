@@ -281,7 +281,7 @@ export function AdminPanel({ supabase, admin, email }: { supabase: SupabaseClien
 
       <section className="admin-content">
         <header className="admin-topbar">
-          <div><span>Panel administrativo</span><h1>{SECTION_TITLES[section]}</h1></div>
+          <div><span>Panel administrativo</span><h1>{SECTION_TITLES[section]}</h1><small className="account-email">{email}</small></div>
           <button className="theme-button" onClick={toggleDark} aria-label={dark ? 'Usar modo claro' : 'Usar modo oscuro'}>{dark ? <Sun size={19} /> : <Moon size={19} />}</button>
         </header>
 
