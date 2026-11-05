@@ -97,7 +97,7 @@ export function MiCursoRuntime() {
       <form onSubmit={(event) => void handleClass(event, isTeacher ? 'create' : 'join')}>
         {isTeacher
           ? <label>Nombre de la clase<input value={className} onChange={(event) => setClassName(event.target.value)} placeholder="Por ejemplo: Historia de 6° A" minLength={2} maxLength={40} required /></label>
-          : <label>Código de clase<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} placeholder="Código de 12 caracteres" autoComplete="off" autoCapitalize="characters" spellCheck={false} minLength={12} maxLength={12} required /></label>}
+          : <label>Código de clase<input value={classCode} onChange={(event) => setClassCode(event.target.value.replace(/[^0-9]/g, '').slice(0, 5))} placeholder="Código de 5 dígitos" autoComplete="off" inputMode="numeric" pattern="[0-9]{5}" spellCheck={false} minLength={5} maxLength={5} required /></label>}
         {authMessage ? <p className="form-feedback" role="status">{authMessage}</p> : null}
         <button className="primary-button" disabled={saving}>{saving ? 'Guardando…' : isTeacher ? 'Crear una clase' : 'Entrar a la clase'}</button>
         <button type="button" className="google-button" onClick={() => void supabase.auth.signOut()}>Cambiar de cuenta</button>
