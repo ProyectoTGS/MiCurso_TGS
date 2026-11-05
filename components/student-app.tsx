@@ -324,8 +324,12 @@ export function StudentApp({ supabase, profile, course, inviteCode, dark, onTogg
         </div>
       </section>
 
-      <button className="floating-add" onClick={() => setEditing('new')} aria-label="Publicar"><Plus size={27} /></button>
-      <nav className="bottom-nav" aria-label="Navegación principal"><button className={view === 'board' ? 'active' : ''} onClick={() => setView('board')}><Home size={21} /><span>Tablón</span></button><button className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}><CalendarDays size={21} /><span>Calendario</span></button><span /><button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}><History size={21} /><span>Historial</span></button></nav>
+      <nav className="bottom-nav" aria-label="Navegación principal">
+        <button className={view === 'board' ? 'active' : ''} onClick={() => setView('board')}><Home size={21} /><span>Tablón</span></button>
+        <button className={view === 'calendar' ? 'active' : ''} onClick={() => setView('calendar')}><CalendarDays size={21} /><span>Calendario</span></button>
+        <button className="floating-add" onClick={() => setEditing('new')} aria-label="Publicar"><Plus size={27} /></button>
+        <button className={view === 'history' ? 'active' : ''} onClick={() => setView('history')}><History size={21} /><span>Historial</span></button>
+      </nav>
 
       {joiningClass ? <div className="modal-layer" role="dialog" aria-modal="true" aria-labelledby="join-class-title"><button className="modal-scrim" onClick={() => setJoiningClass(false)} aria-label="Cerrar" /><section className="modal-card form-modal"><header><h2 id="join-class-title">Cambiar de clase</h2><button onClick={() => setJoiningClass(false)} aria-label="Cerrar"><X size={20} /></button></header><p>Ingresá el código que te dio tu profesor. Dejarás de ver el tablón de tu clase actual.</p><form onSubmit={joinClass}><label>Código de clase<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={12} required /></label>{classError ? <p className="form-feedback" role="status">{classError}</p> : null}<button className="primary-button" disabled={busy}>{busy ? 'Ingresando…' : 'Entrar a la clase'}</button></form></section></div> : null}
       {editing ? <PublicationForm initial={editing === 'new' ? undefined : editing} busy={busy} onClose={() => setEditing(null)} onSave={savePublication} /> : null}
